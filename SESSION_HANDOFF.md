@@ -124,6 +124,10 @@ The current playable loop works:
 - Added grouped inventory HUD rows with fish name, rarity, caught quantity, and total value.
 - Added catch result feedback in the Last Catch panel with value earned and flavor text.
 - Added a larger Legendary catch banner.
+- Added a short Legendary hook warning presentation before the fight starts:
+  - only Legendary hooks trigger it, including dev-forced Legendary hooks
+  - the warning shows anticipation text, pulses the fishing core/bobber, shakes the camera, and plays the existing Legendary warning sound
+  - the active fishing session is not created until the warning ends, so no escape/progress/balance changes happen during the presentation
 - Added a small `DEV rarity` test button that cycles a sticky forced-rarity mode through rarities and back to normal.
 - Added `L` as a dev/test shortcut to keep forcing Legendary hooks until the mode is changed back to Normal.
 - Added first shared ship progression pass:

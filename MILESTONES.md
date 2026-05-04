@@ -8,6 +8,14 @@ Result:
 - Upgrade loop was understood.
 - Core minigame produced a visible positive reaction.
 
+## Milestone: Discord Playtest:
+Notes:
+- Some peopel still find it unclear what the fishing hole is, what the player is, etc
+- on larger screens when the game window is stretched the letters become blurry, game needs to be responsive
+- No mobile controles, game doesnt scale to mobile screen
+- Panel that are opened with letter E should also be closable with letter E
+- general UI/UX improvements like above
+
 ## Audio placeholder test:
 - UI/panel/upgrade sounds help the game feel more responsive.
 - Cast, bite, fish escape, and Legendary warning sounds need replacement later.

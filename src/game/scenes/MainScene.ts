@@ -54,6 +54,7 @@ const HELP_SEEN_STORAGE_KEY = 'space-fishing-help-seen-v1';
 const FISHING_TIPS_HIDDEN_STORAGE_KEY = 'space-fishing-tips-hidden-v1';
 const FISHING_TIP_ATTEMPT_LIMIT = 3;
 const FISHING_TIP_CATCH_LIMIT = 2;
+const LEGENDARY_WARNING_DURATION_MS = 1600;
 const audioKeys = [
   'ui_click',
   'panel_open',
@@ -91,6 +92,7 @@ export class MainScene extends Phaser.Scene {
   private readonly saveProvider: SaveProvider = new LocalStorageSaveProvider();
   private gameState: GameState = createGameState();
   private biteTimer?: Phaser.Time.TimerEvent;
+  private legendaryWarningTimer?: Phaser.Time.TimerEvent;
   private isReeling = false;
 
   private stars!: Phaser.GameObjects.Group;
@@ -144,6 +146,8 @@ export class MainScene extends Phaser.Scene {
   private devRarityButtonBg!: Phaser.GameObjects.Rectangle;
   private devRarityButtonText!: Phaser.GameObjects.Text;
   private legendaryBanner?: Phaser.GameObjects.Text;
+  private legendaryWarningGlow?: Phaser.GameObjects.Arc;
+  private isLegendaryWarningActive = false;
   private tensionSafeZone!: Phaser.GameObjects.Rectangle;
   private safeZoneLabel!: Phaser.GameObjects.Text;
   private tensionMarkerGlow!: Phaser.GameObjects.Rectangle;
@@ -1403,18 +1407,85 @@ export class MainScene extends Phaser.Scene {
   }
 
   private startMiniGame(fish: FishType) {
+    if (fish.rarity === 'Legendary') {
+      this.startLegendaryWarning(fish);
+      return;
+    }
+
+    this.beginFishingFight(fish);
+  }
+
+  private startLegendaryWarning(fish: FishType) {
     this.gameState.castState = 'reeling';
-    this.gameState.statusText = 'Bite! Hold to reel';
+    this.gameState.statusText = 'Something massive is pulling...';
+    this.gameState.activeFishing = null;
+    this.isReeling = false;
+    this.isLegendaryWarningActive = true;
+    this.playSound('legendary_warning', { volume: 0.42 });
+
+    this.resetMeters();
+    this.fishLabel.setText('Legendary presence detected...');
+    this.fishFlavorLabel.setText('Something massive is pulling...');
+    this.warningLabel.setText('Brace yourself.');
+    this.warningLabel.setVisible(true);
+    this.fishShadow.setFillStyle(fish.color, 0.26);
+    this.fishShadow.setScale(1.36);
+    this.showLegendaryWarningEffects(fish);
+    this.refreshHud();
+
+    this.legendaryWarningTimer?.remove();
+    this.legendaryWarningTimer = this.time.delayedCall(LEGENDARY_WARNING_DURATION_MS, () => {
+      this.legendaryWarningTimer = undefined;
+      this.beginFishingFight(fish);
+    });
+  }
+
+  private beginFishingFight(fish: FishType) {
+    this.isLegendaryWarningActive = false;
+    this.gameState.castState = 'reeling';
+    this.gameState.statusText = fish.rarity === 'Legendary' ? 'Legendary bite! Hold to reel' : 'Bite! Hold to reel';
     this.gameState.activeFishing = startFishingSession(this.gameState.player, fish);
     this.fishingHintAttempts += 1;
-    this.playSound(fish.rarity === 'Legendary' ? 'legendary_warning' : 'bite', {
-      volume: fish.rarity === 'Legendary' ? 0.42 : 0.32,
-    });
+    if (fish.rarity !== 'Legendary') {
+      this.playSound('bite', { volume: 0.32 });
+    }
 
     this.fishShadow.setFillStyle(fish.color, 0.34);
     this.fishShadow.setScale(1.24);
     this.updateMeters(this.gameState.activeFishing, fish, isInSafeZone(this.gameState.activeFishing), 'In the red zone');
     this.refreshHud();
+  }
+
+  private showLegendaryWarningEffects(fish: FishType) {
+    this.legendaryWarningGlow?.destroy();
+    this.legendaryWarningGlow = this.add.circle(CENTER_X, CENTER_Y, 76, fish.color, 0.22)
+      .setDepth(6)
+      .setBlendMode(Phaser.BlendModes.ADD);
+
+    this.tweens.add({
+      targets: this.legendaryWarningGlow,
+      scaleX: 2.2,
+      scaleY: 2.2,
+      alpha: 0,
+      duration: LEGENDARY_WARNING_DURATION_MS,
+      ease: 'Sine.out',
+      onComplete: () => {
+        this.legendaryWarningGlow?.destroy();
+        this.legendaryWarningGlow = undefined;
+      },
+    });
+
+    this.tweens.add({
+      targets: [this.poolGlow, this.bobber],
+      scaleX: 1.72,
+      scaleY: 1.72,
+      duration: 260,
+      yoyo: true,
+      repeat: 3,
+      ease: 'Sine.inOut',
+    });
+
+    this.cameras.main.shake(520, 0.004);
   }
 
   private updateMiniGame(delta: number) {
@@ -1564,6 +1635,7 @@ export class MainScene extends Phaser.Scene {
     const { player } = this.gameState;
     const currentZone = getFishingZoneDefinition(this.gameState.ship.currentZone);
     const showMeters = this.gameState.castState === 'reeling' && Boolean(this.gameState.activeFishing);
+    const showHookText = showMeters || this.isLegendaryWarningActive;
 
     this.statusLabel.setText(this.gameState.statusText);
     this.coinsLabel.setText(`${player.coins} coins`);
@@ -1584,9 +1656,9 @@ export class MainScene extends Phaser.Scene {
     this.refreshZoneButtons();
     this.meterObjects.forEach((object) => object.setVisible(showMeters));
     this.updateFishingTipVisibility();
-    this.fishLabel.setVisible(showMeters);
-    this.fishFlavorLabel.setVisible(showMeters);
-    this.warningLabel.setVisible(showMeters && this.warningLabel.text.length > 0);
+    this.fishLabel.setVisible(showHookText);
+    this.fishFlavorLabel.setVisible(showHookText);
+    this.warningLabel.setVisible(showHookText && this.warningLabel.text.length > 0);
   }
 
   private resetMeters() {
@@ -2063,6 +2135,11 @@ export class MainScene extends Phaser.Scene {
 
   private resetSave() {
     this.biteTimer?.remove();
+    this.legendaryWarningTimer?.remove();
+    this.legendaryWarningTimer = undefined;
+    this.isLegendaryWarningActive = false;
+    this.legendaryWarningGlow?.destroy();
+    this.legendaryWarningGlow = undefined;
     const resetSucceeded = this.saveProvider.reset();
     this.gameState = createGameState();
     this.gameState.statusText = resetSucceeded ? 'Save reset' : 'Could not reset save';
