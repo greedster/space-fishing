@@ -15,10 +15,20 @@ export interface SaveEnvelope {
   ship: ShipState;
 }
 
+export interface SaveScope {
+  platform: string;
+  playerId: string;
+  serverId: string;
+  guildId?: string | null;
+}
+
 export interface SaveProvider {
-  load(): SavedGameData | null;
-  save(player: PlayerState, ship: ShipState): boolean;
-  reset(): boolean;
+  // Implementations should scope player data by player.playerId and shared ship data by ship.serverId.
+  // LocalStorageSaveProvider currently stores both together for the local prototype; future providers can
+  // split local browser, backend/cloud, and Discord guild/server persistence behind this same boundary.
+  load(scope?: SaveScope): SavedGameData | null;
+  save(player: PlayerState, ship: ShipState, scope?: SaveScope): boolean;
+  reset(scope?: SaveScope): boolean;
 }
 
 export function createSaveEnvelope(player: PlayerState, ship: ShipState): SaveEnvelope {
@@ -30,5 +40,5 @@ export function createSaveEnvelope(player: PlayerState, ship: ShipState): SaveEn
   };
 }
 
-// A future localStorage adapter, cloud save endpoint, or Discord-guild save can share this shape.
+// A future localStorage adapter, cloud save endpoint, or Discord guild/server save can share this shape.
 export type SerializedSave = SaveEnvelope;

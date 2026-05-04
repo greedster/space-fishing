@@ -8,6 +8,7 @@ import {
   getZoneNamesForFish,
   type FishingZoneId,
 } from '../data/zones';
+import { createGameStateForPlatform, LocalPlatformProvider, type PlatformProvider } from '../platform/platformProvider';
 import { createGameState, type GameState } from '../state/gameState';
 import { LocalStorageSaveProvider } from '../save/localStorageSaveProvider';
 import type { SaveProvider } from '../save/saveTypes';
@@ -89,8 +90,10 @@ interface ShipStationInteraction {
 }
 
 export class MainScene extends Phaser.Scene {
+  private readonly platformProvider: PlatformProvider = new LocalPlatformProvider();
+  private readonly platformContext = this.platformProvider.getContext();
   private readonly saveProvider: SaveProvider = new LocalStorageSaveProvider();
-  private gameState: GameState = createGameState();
+  private gameState: GameState = createGameStateForPlatform(this.platformContext);
   private biteTimer?: Phaser.Time.TimerEvent;
   private legendaryWarningTimer?: Phaser.Time.TimerEvent;
   private isReeling = false;
@@ -190,7 +193,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   create() {
-    const savedGame = this.saveProvider.load();
+    const savedGame = this.saveProvider.load(this.platformContext);
     if (savedGame) {
       this.gameState = createGameState(savedGame.player, savedGame.ship);
       this.gameState.statusText = 'Save loaded';
@@ -1140,6 +1143,7 @@ export class MainScene extends Phaser.Scene {
           'Čuvanje je trenutno samo lokalno.',
           'Vizuali su privremeni.',
           'Ekonomija je privremena.',
+          'Mobilne/touch kontrole još nisu potpuno podržane.',
           'Discord/multiplayer još nije implementiran.',
         ],
       };
@@ -1169,6 +1173,7 @@ export class MainScene extends Phaser.Scene {
         'Local save only.',
         'Visuals are placeholder.',
         'Economy is temporary.',
+        'Mobile/touch controls are not fully supported yet.',
         'Discord/multiplayer is not implemented yet.',
       ],
     };
@@ -2117,7 +2122,7 @@ export class MainScene extends Phaser.Scene {
       return true;
     }
 
-    return this.saveProvider.save(this.gameState.player, this.gameState.ship);
+    return this.saveProvider.save(this.gameState.player, this.gameState.ship, this.platformContext);
   }
 
   private hasPlayerProgress() {
@@ -2140,8 +2145,8 @@ export class MainScene extends Phaser.Scene {
     this.isLegendaryWarningActive = false;
     this.legendaryWarningGlow?.destroy();
     this.legendaryWarningGlow = undefined;
-    const resetSucceeded = this.saveProvider.reset();
-    this.gameState = createGameState();
+    const resetSucceeded = this.saveProvider.reset(this.platformContext);
+    this.gameState = createGameStateForPlatform(this.platformContext);
     this.gameState.statusText = resetSucceeded ? 'Save reset' : 'Could not reset save';
     this.isReeling = false;
     this.fishLabel.setText('');

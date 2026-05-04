@@ -1,4 +1,7 @@
 :root {
+  --game-max-width: 1280px;
+  --game-max-height: 720px;
+  --page-padding: 16px;
   color: #eef6ff;
   background: #050713;
   font-family:
@@ -40,9 +43,23 @@ body {
   place-items: center;
 }
 
+#app {
+  width: 100%;
+  height: 100%;
+  padding: var(--page-padding);
+}
+
 #game-container {
-  width: min(100vw, calc(100vh * 16 / 9));
-  height: min(100vh, calc(100vw * 9 / 16));
+  width: min(
+    var(--game-max-width),
+    calc(100vw - (var(--page-padding) * 2)),
+    calc((100vh - (var(--page-padding) * 2)) * 16 / 9)
+  );
+  height: min(
+    var(--game-max-height),
+    calc(100vh - (var(--page-padding) * 2)),
+    calc((100vw - (var(--page-padding) * 2)) * 9 / 16)
+  );
 }
 
 #game-container canvas {

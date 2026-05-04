@@ -36,9 +36,14 @@ The current playable loop works:
 - The Codex station opens `My Fish Codex`, a personal fish discovery/collection log derived from the player's Tackle Box.
 - `My Fish Codex` uses paginated text cards: four fish per page, with discovered/undiscovered visual states and collection progress.
 - Current instant fish-to-coins behavior is temporary prototype behavior; the future economy should make fish items/cargo first.
+- Inventory/capacity enforcement is intentionally deferred. Do not enforce Tackle Box limits or change catch storage until the future economy/cargo loop is designed.
 - Future economy/cargo, bait, art pipeline, ship hub, Discord/multiplayer direction, and open design questions are captured in `DESIGN_NOTES.md`.
 - `ART_BIBLE.md` and `ASSET_PIPELINE.md` now define the visual direction and asset workflow. Future generated fish, ship, UI, and audio assets should follow them.
 - Current audio files are procedurally generated placeholders credited in `AUDIO_CREDITS.md`; several sounds should be replaced or intentionally reworked in a later audio pass.
+- Discord-ready provider seams now exist without Discord SDK/backend/multiplayer:
+  - `LocalPlatformProvider` supplies local player and local ship/server identity
+  - `SaveProvider` accepts an optional identity scope while localStorage behavior and save version remain unchanged
+- Desktop scaling uses a fixed 1280x720 Phaser coordinate space with `Scale.FIT`; page CSS now caps the displayed canvas at native size and fits it down for smaller desktop/iframe windows to avoid blurry oversized text.
 
 ## Recent Changes
 
@@ -59,6 +64,17 @@ The current playable loop works:
   - Saves on page hide/close when the player has progress
   - Redirects `127.0.0.1` to `localhost` so local saves use one browser origin
   - Reset Save button clears local progress for testing
+- Added lightweight Discord-ready provider boundaries:
+  - `src/game/platform/platformProvider.ts`
+  - local context returns `local-player`, `Local Player`, and `local-dev-ship`
+  - new local sessions hydrate initial player/ship identity from the platform provider
+  - existing saves still load through the same localStorage key and save envelope
+  - no Discord SDK, backend, multiplayer, or save format change was added
+- Added a focused desktop/embedded scaling pass:
+  - the game still renders in a stable 1280x720 internal layout
+  - the page wrapper centers the canvas and caps display size at 1280x720
+  - smaller desktop/iframe windows fit the canvas down while preserving 16:9
+  - Help notes that mobile/touch controls are not fully supported yet
 - Tuned the early catch feel so the first safe zone starts near the initial tension marker and catch progress is more forgiving.
 - Moved upgrade definitions into `src/game/data/upgrades.ts`.
 - `MainScene.ts` now focuses on Phaser rendering, input, timers, and HUD updates while systems own fishing, economy, inventory, and upgrade rules.
@@ -166,6 +182,8 @@ The current playable loop works:
 - Documented the future economy/cargo rework:
   - instant catch coins are temporary
   - final flow should be catch fish -> personal inventory -> sell/donate/store/research/process/cook
+  - Tackle Box is personal storage; future Ship Cargo Bay should be shared server/ship storage
+  - Bigger Cargo enforcement is deferred until slot/stack/weight/material rules are designed
   - no economy rework or save data change was implemented
 - Added first Fish Codex / Collection pass:
   - Codex lists every fish from `src/game/data/fish.ts`.
@@ -186,6 +204,7 @@ The current playable loop works:
   - future Discord version may add a shared Ship Codex/Aquarium
   - future UI may separate `My Codex` and `Ship Codex`
 - Save envelope moved to version 2 and now persists both player and ship state. Version-1 player-only saves migrate by creating a default local ship.
+- `SaveProvider` accepts an optional identity scope for future per-player/per-guild persistence. `LocalStorageSaveProvider` ignores the scope for now so existing local saves keep working.
 - Added save migration fallback for older caught fish entries that do not have flavor text yet.
 - Added upgrade panel:
   - Stronger Line
@@ -263,7 +282,7 @@ The current playable loop works:
 - Ship hub UI is a first pass with simple station circles and modal panels; it still needs hand playtesting for spacing and click affordance.
 - Walkable movement is intentionally rough: there is no pathfinding, collision with station objects, avatar animation, room transitions, or multiplayer presence yet.
 - Nebula Drift currently reuses existing visuals/audio, but now has its own fish table and zone-specific fish. Zone-specific presentation should come later.
-- Bigger Cargo only updates capacity data; inventory limit is not enforced yet. Treat it as placeholder until the future cargo/inventory rework.
+- Bigger Cargo only updates capacity data; inventory limit is not enforced yet. Treat it as placeholder until the future cargo/inventory rework, and do not implement limits before the economy decisions are made.
 - Upgrade UI is functional but visually basic.
 - The `DEV` station and rarity override are intentionally available for local testing and should be hidden or environment-gated before public/friend testing.
 - Inventory shows up to three fish rows per rarity group to fit the current HUD.
@@ -304,12 +323,16 @@ Before major new features, read `DESIGN_NOTES.md` alongside `GAME_DESIGN.md`, `A
    - Codex discovery derived from inventory
    - save normalization
    - ship upgrade unlocks
-7. Later: Discord/server integration.
+7. Later: Discord/server integration:
+   - add a Discord platform provider
+   - add a scoped backend/cloud save provider
+   - map Discord guild/server id to `ShipState.serverId`
 8. Later: economy/cargo rework.
 
 ## Testing Notes
 
 - Inventory persistence: catch any fish, confirm it appears under its rarity in the Tackle Box panel, refresh `http://localhost:5173`, and confirm coins, Last Catch, and inventory rows reload from localStorage.
+- Provider seam testing: reset save in local mode, refresh, and confirm a new local profile starts as `local-player` / `Local Player` on `local-dev-ship`; then catch or upgrade and confirm localStorage persistence still works after refresh.
 - Legendary testing: click `DEV rarity` until it reads `Legendary`, or press `L`, then cast. Every hooked fish will stay Legendary until `DEV rarity` is cycled back to `Normal`.
 - Stronger Line testing: use existing saves/coins or catch fish to buy levels, then force Legendary with `L`. Compare level 0 versus upgraded safe-zone size; it should help, but the safe zone should still move and surge enough to demand attention.
 - Rarity pacing testing: click `DEV rarity` to cycle Common, Uncommon, Rare, Epic, Legendary, and Normal. The selected rarity persists across catches, which makes repeated tuning passes easier. Stronger Line should make aiming easier but should not make the progress bar complete without active input.
@@ -320,6 +343,7 @@ Before major new features, read `DESIGN_NOTES.md` alongside `GAME_DESIGN.md`, `A
 - Walkable interaction testing: use WASD or arrow keys to move the avatar around the ship ring. Confirm the avatar cannot enter the central fishing core. Walk near Gear Bench, Reactor Console, Tackle Box, Codex, Deep Space Scanner, and DEV; confirm the `Press E to open ...` prompt appears, pressing `E` opens the matching panel, movement stops while the panel is open, and movement resumes after closing it.
 - Fishing-hole proximity testing: walk away from the Fishing Hole and confirm the Cast button disappears or cannot start a cast. Walk back near the Fishing Hole and confirm `Press E to Cast` appears, Cast appears, pressing `E` starts waiting for a bite, and the existing fishing minigame still behaves the same. During reeling, confirm mouse hold and Spacebar both apply tension and avatar movement remains locked until the catch ends.
 - Help panel testing: click `? Help` and confirm controls, stations, and prototype notes are readable. In a fresh browser/localStorage profile, confirm it opens once automatically, then closes with `X` or `Got it` and does not reopen automatically afterward.
+- Scaling testing: test a normal desktop window, a large/fullscreen desktop window, and a narrower browser or iframe-sized window. Confirm the canvas stays centered, does not scale past 1280x720, text is not obviously blurry, and panels/station prompts remain usable.
 - First-time fishing hint testing: in a fresh localStorage profile, cast and confirm a compact tip appears above the fishing meters. Confirm `Hide tips` removes it, or that it stops appearing after 3 fishing attempts or 2 successful catches.
 - Fishing hub testing: click Fishing Hole or Cast, then cast as usual. Confirm tension/catch meters appear only during reeling, and a successful catch shows the temporary Last Catch toast.
 - Codex testing: open Codex and confirm fish already in Tackle Box are discovered while uncaught fish are `???`. Use Prev/Next to confirm all 12 fish are reachable and entries stay inside the panel. Catch a fish already discovered and confirm no new-entry toast. Force a rarity/fish that has not been caught yet, catch it, and confirm `New Codex Entry!` appears. Refresh and confirm Codex discovery is still correct because it is derived from inventory.

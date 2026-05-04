@@ -3,6 +3,9 @@ import type { UpgradeId } from '../data/upgrades';
 
 export type CatchQuality = 'Messy Catch' | 'Clean Catch' | 'Perfect Catch';
 
+export const localPlayerId = 'local-player';
+export const localPlayerName = 'Local Player';
+
 export interface CaughtFish {
   id: string;
   fishId: string;
@@ -15,7 +18,7 @@ export interface CaughtFish {
 }
 
 export interface PlayerState {
-  // Discord SDK identity can later hydrate this id/name before the Phaser scene starts.
+  // Hydrated from PlatformProvider. Local uses a stable fake user; Discord can later provide real user identity.
   playerId: string;
   displayName: string;
   coins: number;
@@ -26,8 +29,8 @@ export interface PlayerState {
 
 export function createPlayerState(overrides: Partial<PlayerState> = {}): PlayerState {
   return {
-    playerId: 'local-player',
-    displayName: 'Local Astronaut',
+    playerId: localPlayerId,
+    displayName: localPlayerName,
     coins: 0,
     cargoCapacity: 10,
     caughtFish: [],

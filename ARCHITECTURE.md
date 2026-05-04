@@ -11,6 +11,7 @@ Space Fishing is a browser-only Phaser 3 prototype built with TypeScript and Vit
 - `src/game/config.ts` owns Phaser sizing, scaling, parent container, and scene registration.
 - `src/game/scenes/MainScene.ts` owns rendering, pointer input, tweens, timers, and HUD drawing.
 - `MainScene` reads and mutates a plain `GameState`, then delegates gameplay rules to systems.
+- `MainScene` is constructed with local provider boundaries today: `LocalPlatformProvider` for identity/context and `LocalStorageSaveProvider` for saves. Future Discord/backend work should replace providers instead of changing fishing rules.
 
 ## Scene UI Structure
 
@@ -35,6 +36,22 @@ The panel manager is intentionally local to the scene for now because the UI is 
 - `src/game/save/saveTypes.ts` defines the versioned save envelope and provider interface.
 - `src/game/save/localStorageSaveProvider.ts` implements the current local-only save/load/reset provider using `localStorage`. Save version 2 stores both `player` and `ship`; older player-only saves are normalized with a default local ship.
 - The local ship uses `local-dev-ship` as a fake server id. This should later become the Discord guild/server id used by backend persistence.
+
+## Provider Boundaries
+
+- `src/game/platform/platformProvider.ts` defines `PlatformProvider` and `PlatformContext`.
+- `LocalPlatformProvider` is the only implementation right now. It returns `platform: "local"`, `playerId: "local-player"`, `playerName: "Local Player"`, `serverId: "local-dev-ship"`, `guildId: null`, and `isDiscord: false`.
+- `createGameStateForPlatform` hydrates the initial local `PlayerState` and `ShipState` from the platform context before save loading.
+- Existing saves still win when present; save normalization preserves older `playerId`, `displayName`, and `serverId` values.
+- A future Discord provider should hydrate Discord user id/name and guild/server id before save loading, then pass that same context into the save provider.
+
+## Identity And Saves
+
+- Player identity lives in `PlayerState.playerId` and `PlayerState.displayName`.
+- Ship/server identity lives in `ShipState.serverId`; `local-dev-ship` is intentionally a placeholder for a future Discord guild/server id.
+- `SaveProvider` now accepts an optional `SaveScope` containing platform, player id, server id, and optional guild id. The current localStorage provider ignores that scope and keeps the existing local browser save behavior.
+- Future save providers can use the same interface for local browser saves, backend/cloud saves, and Discord guild/server ship saves.
+- Save format remains version 2; no Discord SDK, backend, accounts, or multiplayer transport exists yet.
 
 ## Data Config
 
@@ -66,9 +83,9 @@ The panel manager is intentionally local to the scene for now because the UI is 
 
 ## Future Plug-In Points
 
-- Discord identity: hydrate `PlayerState.playerId` and `displayName` before scene creation.
+- Discord identity: replace `LocalPlatformProvider` with a Discord-backed provider that hydrates `PlayerState.playerId` and `displayName` before scene creation.
 - Discord guild identity: hydrate `ShipState.serverId` from the current guild/server id instead of `local-dev-ship`.
-- Cloud save: replace `LocalStorageSaveProvider` with another `SaveProvider` implementation that persists player state per user and ship state per guild/server.
+- Cloud save: replace `LocalStorageSaveProvider` with another `SaveProvider` implementation that uses `SaveScope` to persist player state per user and ship state per guild/server.
 - Multiplayer sync: share `GameState` or selected `FishingSessionState` snapshots through a later session transport.
 - Shared Codex: later add server/ship-level discovery tracking separately from the current personal Codex, likely surfaced as `Ship Codex` or `Ship Aquarium`.
 

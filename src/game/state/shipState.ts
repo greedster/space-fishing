@@ -15,7 +15,7 @@ export interface ShipContributionLogEntry {
 }
 
 export interface ShipState {
-  // This local id stands in for the future Discord guild/server id.
+  // Hydrated from PlatformProvider. local-dev-ship stands in for a future Discord guild/server id.
   serverId: string;
   shipName: string;
   level: number;

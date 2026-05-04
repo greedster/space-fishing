@@ -151,9 +151,11 @@ The Codex should feel like a research/collection goal, not a shop. Future versio
 
 A future Discord/server version may add a shared Ship Codex or Ship Aquarium that tracks discoveries across the whole server/ship. That should be separate from the current personal Codex. Future UI may explicitly split this into `My Codex` and `Ship Codex`.
 
-## Future Economy / Cargo Rework
+## Future Economy / Cargo Loop
 
-The current instant fish-to-coins reward is temporary prototype behavior for fast testing. In the final direction, catching a fish should place it in the player's personal Tackle Box or inventory first, and should not automatically grant spendable coins.
+The current economy is prototype-only. A successful catch adds the fish to the player's personal Tackle Box and immediately awards coins based on catch quality. This instant fish-to-coins behavior exists for fast testing of upgrades, ship progression, and save/load. It should not be treated as the final economy.
+
+`Bigger Cargo` currently displays and increases a prepared capacity value, but inventory capacity is not enforced. Do not enforce Tackle Box limits, reject catches, or change save data until the economy and cargo loop are designed. Bigger Cargo may become a personal inventory upgrade, a shared cargo upgrade, a weight/material capacity upgrade, or be renamed once the final loop is clearer.
 
 The intended long-term flow is:
 
@@ -162,18 +164,32 @@ The intended long-term flow is:
 3. Player chooses what to do with the fish.
 4. That choice produces coins, resources, ship progress, collection progress, buffs, or storage.
 
-Personal Inventory / Tackle Box is personal player storage. Ship Cargo Bay should become future shared ship/server storage, separate from the player's caught-fish list.
+Future fish choices should include:
 
-Possible fish uses:
+- Sell fish for coins.
+- Donate fish or resources to shared ship projects.
+- Move fish or materials to the shared Ship Cargo Bay.
+- Submit fish to Codex, Aquarium, or Research systems.
+- Process fish into materials.
+- Cook or use fish for temporary buffs.
 
-- Sell at a market or trade terminal for coins.
-- Donate to ship projects.
-- Submit to an aquarium, codex, or research system.
-- Process into materials.
-- Cook or consume for temporary buffs.
-- Store in a shared Ship Cargo Bay.
+Personal vs shared ownership:
+
+- Tackle Box: personal player inventory.
+- Ship Cargo Bay: future shared server/ship storage.
+- My Codex: personal discoveries derived from the player's Tackle Box.
+- Ship Aquarium / Ship Codex: future shared server/ship discoveries and displays.
 
 Player upgrades and ship upgrades may eventually require coins, resources, fish, materials, or mixed recipes instead of only instant catch coins. Future fish sprites/cards will likely require a rework of the inventory UI so fish can feel like objects, not just text rows.
+
+Open design questions:
+
+- Should fish take one slot each, stack by species, stack by rarity, or use another model?
+- Should cargo capacity limit fish count, weight, rarity, material volume, or a mix of those?
+- Should selling be manual, automatic, station-based, or configurable by the player?
+- Should Common fish be useful in bulk for ship projects so relaxed fishing still matters?
+- Should Legendary fish be sellable, displayable, required for rare upgrades, or protected from accidental disposal?
+- What should Bigger Cargo actually upgrade in the final economy?
 
 ## Ship/Base Ideas
 

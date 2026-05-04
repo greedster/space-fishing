@@ -10,6 +10,7 @@ import {
   type SavedGameData,
   type SaveEnvelope,
   type SaveProvider,
+  type SaveScope,
 } from './saveTypes';
 
 const defaultSaveKey = 'space-fishing-save';
@@ -17,7 +18,7 @@ const defaultSaveKey = 'space-fishing-save';
 export class LocalStorageSaveProvider implements SaveProvider {
   constructor(private readonly storageKey = defaultSaveKey) {}
 
-  load(): SavedGameData | null {
+  load(_scope?: SaveScope): SavedGameData | null {
     if (!this.canUseStorage()) {
       return null;
     }
@@ -42,7 +43,7 @@ export class LocalStorageSaveProvider implements SaveProvider {
     }
   }
 
-  save(player: PlayerState, ship: ShipState) {
+  save(player: PlayerState, ship: ShipState, _scope?: SaveScope) {
     if (!this.canUseStorage()) {
       return false;
     }
@@ -55,7 +56,7 @@ export class LocalStorageSaveProvider implements SaveProvider {
     }
   }
 
-  reset() {
+  reset(_scope?: SaveScope) {
     if (!this.canUseStorage()) {
       return false;
     }

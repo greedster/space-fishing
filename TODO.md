@@ -23,7 +23,7 @@
   - they can be hidden manually and auto-retire after 3 attempts or 2 catches
   - future polish should improve wording, placement, or timing only if needed
 - Tune upgrade costs and effects after the new Better Lure odds have been playtested.
-- Bigger Cargo is currently placeholder/non-enforced; enforce capacity, rename it, or fold it into the future cargo/inventory rework.
+- Keep Bigger Cargo enforcement deferred until the future economy/cargo loop is designed; do not enforce Tackle Box limits yet.
 - Hide or environment-gate the DEV station and rarity override before public/friend testing.
 - Playtest the new safe-zone movement and surge values with no upgrades and with Stronger Line levels 1, 3, and 5.
 - Consider a clearer visual/audio cue for incoming surges if they feel too sudden.
@@ -33,8 +33,17 @@
   - keep it around 1-2 seconds
   - presentation only, not a nerf; the Legendary fight should remain hard after the warning
 - Add lightweight automated system tests for minimum catch pacing so Common/Uncommon cannot regress into instant catches.
+- Later: add mobile/touch controls and test them separately from desktop iframe scaling.
+- Later: do a deeper responsive layout pass for very small windows after the core desktop layout is stable.
+- Later: test the GitHub Pages build inside a Discord Activity iframe once Discord SDK work begins.
 - Later: add Discord/server integration after local ship hub, persistence boundaries, and shared ship loop feel stable.
+  - add a DiscordPlatformProvider once the Discord SDK is introduced
+  - add a scoped backend/cloud SaveProvider for per-user player state and per-guild ship state
 - Later: implement the economy/cargo rework after the prototype loop is stable.
+  - decide Tackle Box slot/stack/weight rules before enforcing capacity
+  - design sell/donate/store/research/process/cook choices
+  - decide what Bigger Cargo upgrades in the final economy
+  - then update UI/save/runtime behavior together
 Future audio pass:
 - follow `ART_BIBLE.md`, `ASSET_PIPELINE.md`, and `AUDIO_CREDITS.md`
 - replace cast sound with softer line/whoosh
@@ -66,6 +75,7 @@ Future audio pass:
 - Add fish processing/conversion station.
 - Remove instant coin rewards from catches once the economy loop exists.
 - Add cargo decisions after catching fish.
+- Decide Tackle Box capacity rules before enforcing Bigger Cargo.
 - Add aquarium/codex/research uses for fish.
 - Create real shared Ship Cargo Bay storage.
 - Add donation flow for fish/resources into ship storage or ship projects.
