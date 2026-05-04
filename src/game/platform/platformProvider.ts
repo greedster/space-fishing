@@ -5,6 +5,7 @@ import { createShipState, localDevShipId } from '../state/shipState';
 
 export type PlatformKind = 'local' | 'discord';
 export type DiscordReadyStatus = 'not-discord' | 'initializing' | 'ready' | 'missing-client-id' | 'error';
+export type DiscordAuthStatus = 'not-discord' | 'not-started' | 'authorizing' | 'authenticated' | 'fallback' | 'error';
 
 export interface PlatformContext {
   platform: PlatformKind;
@@ -16,6 +17,7 @@ export interface PlatformContext {
   channelId: string | null;
   instanceId: string | null;
   discordReadyStatus: DiscordReadyStatus;
+  discordAuthStatus: DiscordAuthStatus;
   discordError?: string;
 }
 
@@ -42,6 +44,7 @@ export class LocalPlatformProvider implements PlatformProvider {
     channelId: null,
     instanceId: null,
     discordReadyStatus: 'not-discord',
+    discordAuthStatus: 'not-discord',
   };
 
   getContext(): PlatformContext {
@@ -64,12 +67,16 @@ export class DiscordPlatformProvider implements PlatformProvider {
     channelId: null,
     instanceId: null,
     discordReadyStatus: 'initializing',
+    discordAuthStatus: 'not-started',
   };
 
   private discordSdk?: DiscordSDK;
   private readonly contextListeners: Array<(context: PlatformContext) => void> = [];
 
-  constructor(private readonly clientId?: string) {
+  constructor(
+    private readonly clientId?: string,
+    private readonly redirectUri = 'https://127.0.0.1',
+  ) {
     if (!clientId) {
       this.context = {
         ...this.context,
@@ -101,10 +108,11 @@ export class DiscordPlatformProvider implements PlatformProvider {
       await this.trySubscribeCurrentUserUpdates();
 
       const guildId = this.discordSdk.guildId;
-      const authenticatedUser = await this.tryAuthenticateUser();
+      const authenticatedUser = await this.tryHydrateAuthenticatedUser();
       const participants = await this.tryGetParticipants();
       const onlyParticipant = participants.length === 1 ? participants[0] : undefined;
       const player = authenticatedUser ?? onlyParticipant;
+      const authStatus = authenticatedUser ? 'authenticated' : 'fallback';
 
       this.context = {
         ...this.context,
@@ -115,13 +123,15 @@ export class DiscordPlatformProvider implements PlatformProvider {
         channelId: this.discordSdk.channelId,
         instanceId: this.discordSdk.instanceId,
         discordReadyStatus: 'ready',
-        discordError: undefined,
+        discordAuthStatus: authStatus,
       };
+      this.context.discordError = authenticatedUser ? undefined : this.context.discordError;
       this.notifyContextChange();
     } catch (error) {
       this.context = {
         ...this.context,
         discordReadyStatus: 'error',
+        discordAuthStatus: 'error',
         discordError: error instanceof Error ? error.message : 'Discord SDK initialization failed.',
       };
       this.notifyContextChange();
@@ -140,12 +150,70 @@ export class DiscordPlatformProvider implements PlatformProvider {
     }
   }
 
-  private async tryAuthenticateUser(): Promise<DiscordUserIdentity | undefined> {
+  private async tryHydrateAuthenticatedUser(): Promise<DiscordUserIdentity | undefined> {
     try {
-      return (await this.discordSdk?.commands.authenticate({}))?.user;
-    } catch {
+      this.context = {
+        ...this.context,
+        discordAuthStatus: 'authorizing',
+        discordError: undefined,
+      };
+      this.notifyContextChange();
+
+      const accessToken = await this.requestDiscordAccessToken();
+      const authentication = await this.discordSdk?.commands.authenticate({ access_token: accessToken });
+      return authentication?.user;
+    } catch (error) {
+      this.context = {
+        ...this.context,
+        discordAuthStatus: 'fallback',
+        discordError: formatDiscordAuthError(error),
+      };
+      this.notifyContextChange();
       return undefined;
     }
+  }
+
+  private async requestDiscordAccessToken() {
+    if (!this.discordSdk || !this.clientId) {
+      throw new Error('Discord SDK is not ready for auth.');
+    }
+
+    const verifier = createCodeVerifier();
+    const challenge = await createCodeChallenge(verifier);
+    const { code } = await this.discordSdk.commands.authorize({
+      client_id: this.clientId,
+      response_type: 'code',
+      state: '',
+      prompt: 'none',
+      scope: ['identify'],
+      code_challenge: challenge,
+      code_challenge_method: 'S256',
+    });
+
+    const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: this.clientId,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: this.redirectUri,
+        code_verifier: verifier,
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      throw new Error(`Discord token exchange failed (${tokenResponse.status}).`);
+    }
+
+    const token = await tokenResponse.json() as { access_token?: string };
+    if (!token.access_token) {
+      throw new Error('Discord token response did not include an access token.');
+    }
+
+    return token.access_token;
   }
 
   private async tryGetParticipants() {
@@ -176,7 +244,7 @@ export class DiscordPlatformProvider implements PlatformProvider {
 
 export function createPlatformProvider(): PlatformProvider {
   return shouldUseDiscordPlatform()
-    ? new DiscordPlatformProvider(import.meta.env.VITE_DISCORD_CLIENT_ID)
+    ? new DiscordPlatformProvider(import.meta.env.VITE_DISCORD_CLIENT_ID, import.meta.env.VITE_DISCORD_REDIRECT_URI)
     : new LocalPlatformProvider();
 }
 
@@ -215,4 +283,36 @@ function shouldUseDiscordPlatform() {
 
 function getDiscordDisplayName(user?: DiscordUserIdentity | null) {
   return user?.global_name ?? user?.username;
+}
+
+function createCodeVerifier() {
+  const randomBytes = new Uint8Array(48);
+  window.crypto.getRandomValues(randomBytes);
+  return base64UrlEncode(randomBytes);
+}
+
+async function createCodeChallenge(verifier: string) {
+  if (!window.crypto.subtle) {
+    throw new Error('Web Crypto PKCE support is unavailable.');
+  }
+
+  const digest = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  return base64UrlEncode(new Uint8Array(digest));
+}
+
+function base64UrlEncode(bytes: Uint8Array) {
+  let value = '';
+  bytes.forEach((byte) => {
+    value += String.fromCharCode(byte);
+  });
+
+  return btoa(value)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+function formatDiscordAuthError(error: unknown) {
+  const message = error instanceof Error ? error.message : 'Discord auth failed.';
+  return `Auth fallback: ${message}`;
 }

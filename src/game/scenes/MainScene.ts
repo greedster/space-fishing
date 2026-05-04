@@ -485,7 +485,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   private createPlatformDebugOverlay() {
-    this.platformDebugBg = this.add.rectangle(0, 0, 306, 74, 0x050914, 0.72)
+    this.platformDebugBg = this.add.rectangle(0, 0, 306, 88, 0x050914, 0.72)
       .setOrigin(0)
       .setStrokeStyle(1, 0x7df9ff, 0.22);
     this.platformDebugText = this.add.text(10, 8, '', {
@@ -495,8 +495,8 @@ export class MainScene extends Phaser.Scene {
       lineSpacing: 3,
     });
 
-    this.platformDebugContainer = this.add.container(12, 634, [this.platformDebugBg, this.platformDebugText]);
-    this.platformDebugContainer.setSize(306, 74);
+    this.platformDebugContainer = this.add.container(12, 620, [this.platformDebugBg, this.platformDebugText]);
+    this.platformDebugContainer.setSize(306, 88);
     this.platformDebugContainer.setDepth(28);
     this.platformDebugContainer.setInteractive({ useHandCursor: true });
     this.platformDebugContainer.on('pointerdown', () => {
@@ -1270,20 +1270,22 @@ export class MainScene extends Phaser.Scene {
     const player = `${this.platformContext.playerName} (${this.platformContext.playerId})`;
     const guild = this.platformContext.guildId ?? this.platformContext.serverId;
     const ready = this.platformContext.discordReadyStatus;
+    const auth = this.platformContext.discordAuthStatus;
     const error = this.platformContext.discordError ? `\n${this.truncateDebugValue(this.platformContext.discordError)}` : '';
     const text = this.platformDebugCollapsed
-      ? `Platform: ${this.platformContext.platform} / ${ready}`
+      ? `Platform: ${this.platformContext.platform} / ${ready} / ${auth}`
       : [
         'TEMP PLATFORM DEBUG',
         `platform: ${this.platformContext.platform} / ready: ${ready}`,
+        `auth: ${auth}`,
         `player: ${this.truncateDebugValue(player)}`,
         `server/guild: ${this.truncateDebugValue(guild)}`,
         `channel: ${this.platformContext.channelId ?? 'n/a'}`,
       ].join('\n') + error;
 
     this.platformDebugText.setText(text);
-    this.platformDebugBg.setDisplaySize(this.platformDebugCollapsed ? 210 : 306, this.platformDebugCollapsed ? 28 : 74);
-    this.platformDebugContainer.setSize(this.platformDebugCollapsed ? 210 : 306, this.platformDebugCollapsed ? 28 : 74);
+    this.platformDebugBg.setDisplaySize(this.platformDebugCollapsed ? 260 : 306, this.platformDebugCollapsed ? 28 : 88);
+    this.platformDebugContainer.setSize(this.platformDebugCollapsed ? 260 : 306, this.platformDebugCollapsed ? 28 : 88);
   }
 
   private truncateDebugValue(value: string) {

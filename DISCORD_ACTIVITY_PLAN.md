@@ -64,16 +64,18 @@ Spike progress:
 - `@discord/embedded-app-sdk` has been added.
 - `DiscordPlatformProvider` now exists beside `LocalPlatformProvider`.
 - The app reads `VITE_DISCORD_CLIENT_ID` from `import.meta.env`.
+- The app can read `VITE_DISCORD_REDIRECT_URI`; default is `https://127.0.0.1`, which must match a Discord Developer Portal OAuth2 redirect URI.
 - Discord mode initializes only when iframe/query/referrer/env detection says it should.
 - The provider calls `discordSdk.ready()` before reporting ready.
-- Discord player identity now hydrates from SDK `READY` / `CURRENT_USER_UPDATE` data, with `commands.authenticate({})` and single-participant lookup as graceful fallbacks.
-- A temporary bottom-left platform debug overlay shows platform, player, server/guild, channel, and ready status.
+- Discord player identity now uses the Embedded App SDK auth flow: `authorize` with `identify`, client-side PKCE token exchange, then `authenticate({ access_token })`.
+- SDK `READY` / `CURRENT_USER_UPDATE` data and single-participant lookup remain graceful fallbacks.
+- A temporary bottom-left platform debug overlay shows platform, ready/auth status, player, server/guild, and channel.
 
 Still future work:
 
 - Map Discord guild/server id to `ShipState.serverId`.
 - Pass the same platform context into the existing `SaveProvider` scope.
-- Add a clear error/fallback state if the app is opened in Discord but SDK initialization fails.
+- Decide whether production identity should move token exchange behind a backend before any trusted economy/shared ship persistence.
 
 The existing `PlatformProvider`, `PlatformContext`, and optional `SaveScope` are the intended integration points.
 
@@ -127,7 +129,7 @@ Nice-to-have for spike:
 
 - GitHub Pages project path may complicate Discord URL Mapping. Verify whether `/space-fishing/` works cleanly through the Activity proxy.
 - Discord Activity network traffic goes through the Discord proxy; external requests need URL mappings or SDK URL patching.
-- OAuth/authentication may require a backend if the game needs trusted user or guild data. Client-provided Discord context should not be treated as authoritative for real economy or shared ship state.
+- Current auth spike uses frontend PKCE because there is intentionally no backend yet. Discord's official Activity examples exchange the authorization code through a server; before trusted economy/shared ship persistence, move token exchange to a backend or other approved production auth path.
 - localStorage inside Discord iframe may behave differently from normal browser localStorage and should only be used for the proof-of-concept.
 - The current game is desktop-focused; Discord can run Activities in mobile contexts too, but mobile/touch controls are deferred.
 - Need to decide how to handle launches outside a guild, such as DMs or group DMs, when shared ship state eventually expects a guild/server id.

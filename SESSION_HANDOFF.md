@@ -48,8 +48,8 @@ The current playable loop works:
 - First Discord Activity SDK detection spike is implemented:
   - Discord SDK initializes only when Discord/query/referrer/env detection requests it
   - local browser/GitHub Pages mode keeps using `LocalPlatformProvider`
-  - Discord player identity now hydrates from SDK user data when available, with local fallback preserved
-  - bottom-left temporary platform debug overlay shows platform, player, server/guild, channel, and Discord ready status
+  - Discord player identity now hydrates through SDK authorization/authentication when available, with local fallback preserved
+  - bottom-left temporary platform debug overlay shows platform, ready/auth status, player, server/guild, and channel
 
 ## Recent Changes
 
@@ -79,9 +79,10 @@ The current playable loop works:
 - Added the first Discord SDK detection/context spike:
   - dependency: `@discord/embedded-app-sdk`
   - env: `VITE_DISCORD_CLIENT_ID`
+  - env: `VITE_DISCORD_REDIRECT_URI`, defaulting to `https://127.0.0.1`
   - optional env/query override: `VITE_DISCORD_ACTIVITY=true`, `?discord=1`, or `?discord_activity=1`
   - Discord iframe-style query/referrer hints also enable Discord mode
-  - SDK `ready()` status, Discord player identity, and available guild/channel context are shown in a temporary bottom-left overlay
+  - SDK `ready()` status, auth status, Discord player identity, and available guild/channel context are shown in a temporary bottom-left overlay
   - no backend auth, shared persistence, multiplayer, or save format change was added
 - Added a focused desktop/embedded scaling pass:
   - the game still renders in a stable 1280x720 internal layout
@@ -284,7 +285,7 @@ The current playable loop works:
 
 - Saves are localStorage-only for now; the provider boundary is ready for a later cloud/Discord-backed save.
 - Old saves made under `127.0.0.1` cannot be read from `localhost` because browsers isolate localStorage by origin.
-- Multiplayer and shared Discord persistence are only documented plug-in points; Discord player/guild/channel context is currently a frontend-only spike.
+- Multiplayer and shared Discord persistence are only documented plug-in points; Discord player/guild/channel context is currently a frontend-only spike. Production trusted identity should revisit backend token exchange before any shared economy or ship persistence.
 - The red/safe zone is clearer now, but still needs playtesting for first-time readability.
 - Harder fish now have smaller red zones and stronger tension/progress tuning, but the exact balance still needs playtesting.
 - Some harder or rarer fish may later have moving red zones.
@@ -346,7 +347,7 @@ Before major new features, read `DESIGN_NOTES.md` alongside `GAME_DESIGN.md`, `A
 
 - Inventory persistence: catch any fish, confirm it appears under its rarity in the Tackle Box panel, refresh `http://localhost:5173`, and confirm coins, Last Catch, and inventory rows reload from localStorage.
 - Provider seam testing: reset save in local mode, refresh, and confirm a new local profile starts as `local-player` / `Local Player` on `local-dev-ship`; then catch or upgrade and confirm localStorage persistence still works after refresh.
-- Discord provider testing: set `VITE_DISCORD_CLIENT_ID`, launch inside Discord Activity, and confirm the bottom-left overlay changes from local/initializing to Discord ready or a readable error. In Discord, confirm player shows your Discord id/name and server/guild/channel show real context when available. Confirm browser/GitHub Pages outside Discord still reports local mode.
+- Discord provider testing: set `VITE_DISCORD_CLIENT_ID`, ensure the Discord Developer Portal has the `VITE_DISCORD_REDIRECT_URI` value as an OAuth2 redirect URI, launch inside Discord Activity, and confirm the bottom-left overlay changes from local/initializing to Discord ready/authenticated or a readable fallback/error. In Discord, confirm player shows your Discord id/name and server/guild/channel show real context when available. Confirm browser/GitHub Pages outside Discord still reports local mode.
 - Legendary testing: click `DEV rarity` until it reads `Legendary`, or press `L`, then cast. Every hooked fish will stay Legendary until `DEV rarity` is cycled back to `Normal`.
 - Stronger Line testing: use existing saves/coins or catch fish to buy levels, then force Legendary with `L`. Compare level 0 versus upgraded safe-zone size; it should help, but the safe zone should still move and surge enough to demand attention.
 - Rarity pacing testing: click `DEV rarity` to cycle Common, Uncommon, Rare, Epic, Legendary, and Normal. The selected rarity persists across catches, which makes repeated tuning passes easier. Stronger Line should make aiming easier but should not make the progress bar complete without active input.
