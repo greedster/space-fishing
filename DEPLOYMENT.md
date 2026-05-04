@@ -39,6 +39,24 @@ Static assets in `public/` should be referenced through Vite's base URL, for exa
 
 Deployment is handled by `.github/workflows/deploy-pages.yml`. It runs on pushes to `main`, installs dependencies with `npm ci`, builds the Vite app, uploads `dist`, and deploys it through GitHub Pages Actions.
 
+## Discord Activity Environment
+
+Only the public Discord application client id belongs in frontend env:
+
+```bash
+VITE_DISCORD_CLIENT_ID=your_public_client_id
+```
+
+Do not commit Discord client secrets, bot tokens, or backend credentials. Local browser mode does not need this variable. Use `VITE_DISCORD_ACTIVITY=true` only when intentionally forcing SDK initialization outside Discord for a debugging pass.
+
+For GitHub Pages Discord Activity testing, add a repository variable named `VITE_DISCORD_CLIENT_ID` under:
+
+```text
+GitHub repo -> Settings -> Secrets and variables -> Actions -> Variables
+```
+
+The Pages workflow passes that variable into `npm run build`. If it is not set, the app still works in local/GitHub Pages browser mode and the Discord debug overlay reports a missing client id when launched inside Discord.
+
 In GitHub, check:
 
 ```text

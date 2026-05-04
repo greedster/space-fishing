@@ -8,7 +8,7 @@ import {
   getZoneNamesForFish,
   type FishingZoneId,
 } from '../data/zones';
-import { createGameStateForPlatform, LocalPlatformProvider, type PlatformProvider } from '../platform/platformProvider';
+import { createGameStateForPlatform, createPlatformProvider, type PlatformContext, type PlatformProvider } from '../platform/platformProvider';
 import { createGameState, type GameState } from '../state/gameState';
 import { LocalStorageSaveProvider } from '../save/localStorageSaveProvider';
 import type { SaveProvider } from '../save/saveTypes';
@@ -90,8 +90,8 @@ interface ShipStationInteraction {
 }
 
 export class MainScene extends Phaser.Scene {
-  private readonly platformProvider: PlatformProvider = new LocalPlatformProvider();
-  private readonly platformContext = this.platformProvider.getContext();
+  private readonly platformProvider: PlatformProvider = createPlatformProvider();
+  private platformContext: PlatformContext = this.platformProvider.getContext();
   private readonly saveProvider: SaveProvider = new LocalStorageSaveProvider();
   private gameState: GameState = createGameStateForPlatform(this.platformContext);
   private biteTimer?: Phaser.Time.TimerEvent;
@@ -105,6 +105,10 @@ export class MainScene extends Phaser.Scene {
   private fishShadow!: Phaser.GameObjects.Ellipse;
   private playerAvatar!: Phaser.GameObjects.Container;
   private interactionPrompt!: Phaser.GameObjects.Text;
+  private platformDebugContainer!: Phaser.GameObjects.Container;
+  private platformDebugBg!: Phaser.GameObjects.Rectangle;
+  private platformDebugText!: Phaser.GameObjects.Text;
+  private platformDebugCollapsed = false;
 
   private statusLabel!: Phaser.GameObjects.Text;
   private fishLabel!: Phaser.GameObjects.Text;
@@ -205,6 +209,7 @@ export class MainScene extends Phaser.Scene {
     this.createHud();
     this.registerInput();
     this.refreshHud();
+    this.initializePlatformContext();
   }
 
   update(_time: number, delta: number) {
@@ -335,6 +340,7 @@ export class MainScene extends Phaser.Scene {
     this.createCodexToast();
     this.createHelpButton();
     this.createAudioToggleButton();
+    this.createPlatformDebugOverlay();
     this.createShipStations();
     this.createPlayerAvatar();
 
@@ -471,6 +477,28 @@ export class MainScene extends Phaser.Scene {
     this.audioToggleButton.on('pointerover', () => this.audioToggleBg.setFillStyle(0x2d466b, 0.96));
     this.audioToggleButton.on('pointerout', () => this.refreshAudioToggleButton());
     this.refreshAudioToggleButton();
+  }
+
+  private createPlatformDebugOverlay() {
+    this.platformDebugBg = this.add.rectangle(0, 0, 306, 74, 0x050914, 0.72)
+      .setOrigin(0)
+      .setStrokeStyle(1, 0x7df9ff, 0.22);
+    this.platformDebugText = this.add.text(10, 8, '', {
+      color: '#b9cfff',
+      fontFamily: font,
+      fontSize: '10px',
+      lineSpacing: 3,
+    });
+
+    this.platformDebugContainer = this.add.container(12, 634, [this.platformDebugBg, this.platformDebugText]);
+    this.platformDebugContainer.setSize(306, 74);
+    this.platformDebugContainer.setDepth(28);
+    this.platformDebugContainer.setInteractive({ useHandCursor: true });
+    this.platformDebugContainer.on('pointerdown', () => {
+      this.platformDebugCollapsed = !this.platformDebugCollapsed;
+      this.updatePlatformDebugOverlay();
+    });
+    this.updatePlatformDebugOverlay();
   }
 
   private createShipStations() {
@@ -1210,6 +1238,41 @@ export class MainScene extends Phaser.Scene {
     } catch {
       // Placeholder audio should never block gameplay if browser audio is locked or a file is missing.
     }
+  }
+
+  private async initializePlatformContext() {
+    this.platformContext = this.platformProvider.getContext();
+    this.updatePlatformDebugOverlay();
+    this.platformContext = await this.platformProvider.initialize();
+    this.updatePlatformDebugOverlay();
+  }
+
+  private updatePlatformDebugOverlay() {
+    if (!this.platformDebugText || !this.platformDebugBg) {
+      return;
+    }
+
+    const player = `${this.platformContext.playerName} (${this.platformContext.playerId})`;
+    const guild = this.platformContext.guildId ?? this.platformContext.serverId;
+    const ready = this.platformContext.discordReadyStatus;
+    const error = this.platformContext.discordError ? `\n${this.truncateDebugValue(this.platformContext.discordError)}` : '';
+    const text = this.platformDebugCollapsed
+      ? `Platform: ${this.platformContext.platform} / ${ready}`
+      : [
+        'TEMP PLATFORM DEBUG',
+        `platform: ${this.platformContext.platform} / ready: ${ready}`,
+        `player: ${this.truncateDebugValue(player)}`,
+        `server/guild: ${this.truncateDebugValue(guild)}`,
+        `channel: ${this.platformContext.channelId ?? 'n/a'}`,
+      ].join('\n') + error;
+
+    this.platformDebugText.setText(text);
+    this.platformDebugBg.setDisplaySize(this.platformDebugCollapsed ? 210 : 306, this.platformDebugCollapsed ? 28 : 74);
+    this.platformDebugContainer.setSize(this.platformDebugCollapsed ? 210 : 306, this.platformDebugCollapsed ? 28 : 74);
+  }
+
+  private truncateDebugValue(value: string) {
+    return value.length > 36 ? `${value.slice(0, 33)}...` : value;
   }
 
   private refreshAudioToggleButton() {

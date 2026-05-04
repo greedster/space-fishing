@@ -45,6 +45,10 @@ The current playable loop works:
   - `SaveProvider` accepts an optional identity scope while localStorage behavior and save version remain unchanged
 - Desktop scaling uses a fixed 1280x720 Phaser coordinate space with `Scale.FIT`; page CSS now caps the displayed canvas at native size and fits it down for smaller desktop/iframe windows to avoid blurry oversized text.
 - `DISCORD_ACTIVITY_PLAN.md` documents the minimum Discord Activity proof-of-concept plan, including Developer Portal setup, URL mapping, GitHub Pages feasibility, SDK integration points, local fallback behavior, risks, and implementation order.
+- First Discord Activity SDK detection spike is implemented:
+  - Discord SDK initializes only when Discord/query/referrer/env detection requests it
+  - local browser/GitHub Pages mode keeps using `LocalPlatformProvider`
+  - bottom-left temporary platform debug overlay shows platform, player, server/guild, channel, and Discord ready status
 
 ## Recent Changes
 
@@ -71,6 +75,13 @@ The current playable loop works:
   - new local sessions hydrate initial player/ship identity from the platform provider
   - existing saves still load through the same localStorage key and save envelope
   - no Discord SDK, backend, multiplayer, or save format change was added
+- Added the first Discord SDK detection/context spike:
+  - dependency: `@discord/embedded-app-sdk`
+  - env: `VITE_DISCORD_CLIENT_ID`
+  - optional env/query override: `VITE_DISCORD_ACTIVITY=true`, `?discord=1`, or `?discord_activity=1`
+  - Discord iframe-style query/referrer hints also enable Discord mode
+  - SDK `ready()` status and available guild/channel/participant context are shown in a temporary bottom-left overlay
+  - no backend auth, shared persistence, multiplayer, or save format change was added
 - Added a focused desktop/embedded scaling pass:
   - the game still renders in a stable 1280x720 internal layout
   - the page wrapper centers the canvas and caps display size at 1280x720
@@ -334,6 +345,7 @@ Before major new features, read `DESIGN_NOTES.md` alongside `GAME_DESIGN.md`, `A
 
 - Inventory persistence: catch any fish, confirm it appears under its rarity in the Tackle Box panel, refresh `http://localhost:5173`, and confirm coins, Last Catch, and inventory rows reload from localStorage.
 - Provider seam testing: reset save in local mode, refresh, and confirm a new local profile starts as `local-player` / `Local Player` on `local-dev-ship`; then catch or upgrade and confirm localStorage persistence still works after refresh.
+- Discord provider testing: set `VITE_DISCORD_CLIENT_ID`, launch inside Discord Activity, and confirm the bottom-left overlay changes from local/initializing to Discord ready or a readable error. Confirm browser/GitHub Pages outside Discord still reports local mode.
 - Legendary testing: click `DEV rarity` until it reads `Legendary`, or press `L`, then cast. Every hooked fish will stay Legendary until `DEV rarity` is cycled back to `Normal`.
 - Stronger Line testing: use existing saves/coins or catch fish to buy levels, then force Legendary with `L`. Compare level 0 versus upgraded safe-zone size; it should help, but the safe zone should still move and surge enough to demand attention.
 - Rarity pacing testing: click `DEV rarity` to cycle Common, Uncommon, Rare, Epic, Legendary, and Normal. The selected rarity persists across catches, which makes repeated tuning passes easier. Stronger Line should make aiming easier but should not make the progress bar complete without active input.
