@@ -66,12 +66,11 @@ Spike progress:
 - The app reads `VITE_DISCORD_CLIENT_ID` from `import.meta.env`.
 - Discord mode initializes only when iframe/query/referrer/env detection says it should.
 - The provider calls `discordSdk.ready()` before reporting ready.
+- Discord player identity now hydrates from SDK `READY` / `CURRENT_USER_UPDATE` data, with `commands.authenticate({})` and single-participant lookup as graceful fallbacks.
 - A temporary bottom-left platform debug overlay shows platform, player, server/guild, channel, and ready status.
 
 Still future work:
 
-- Use SDK commands/events to get current user and guild/channel context.
-- Map Discord user id/name to `PlayerState.playerId` and `displayName`.
 - Map Discord guild/server id to `ShipState.serverId`.
 - Pass the same platform context into the existing `SaveProvider` scope.
 - Add a clear error/fallback state if the app is opened in Discord but SDK initialization fails.
@@ -140,8 +139,8 @@ Nice-to-have for spike:
 2. Try URL Mapping against `https://greedster.github.io/space-fishing/`.
 3. If GitHub Pages path mapping is awkward, deploy the same static build to a root-hosted temporary domain.
 4. Verify the current SDK detection spike inside Discord using `VITE_DISCORD_CLIENT_ID`.
-5. Improve identity hydration if Discord exposes current user without backend auth, or add the required auth/backend path later.
-6. Map Discord user and guild/server identity into `PlatformContext`.
+5. Verify Discord user identity hydration in the Activity iframe.
+6. Map Discord guild/server identity into `ShipState.serverId` when shared persistence exists.
 7. Keep local fallback outside Discord.
 8. Remove or gate the temporary platform debug overlay before friend/public testing.
 9. Manually test normal browser, GitHub Pages, and Discord iframe launch.

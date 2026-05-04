@@ -209,6 +209,11 @@ export class MainScene extends Phaser.Scene {
     this.createHud();
     this.registerInput();
     this.refreshHud();
+    this.platformProvider.onContextChange?.((context) => {
+      this.platformContext = context;
+      this.applyPlatformPlayerIdentity();
+      this.updatePlatformDebugOverlay();
+    });
     this.initializePlatformContext();
   }
 
@@ -1244,7 +1249,17 @@ export class MainScene extends Phaser.Scene {
     this.platformContext = this.platformProvider.getContext();
     this.updatePlatformDebugOverlay();
     this.platformContext = await this.platformProvider.initialize();
+    this.applyPlatformPlayerIdentity();
     this.updatePlatformDebugOverlay();
+  }
+
+  private applyPlatformPlayerIdentity() {
+    if (!this.platformContext.isDiscord) {
+      return;
+    }
+
+    this.gameState.player.playerId = this.platformContext.playerId;
+    this.gameState.player.displayName = this.platformContext.playerName;
   }
 
   private updatePlatformDebugOverlay() {
