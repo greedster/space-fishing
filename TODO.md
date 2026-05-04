@@ -121,3 +121,11 @@ Future audio pass:
 - Improve responsive layout across more screen sizes.
 - Add accessibility checks for text size and contrast.
 - Add Discord integration only after the browser prototype loop feels good.
+
+## Mobile support later:
+- detect narrow screens
+- show “desktop recommended” message for now
+- later add touch joystick / tap-to-move
+- larger buttons
+- mobile-specific panel scaling
+- maybe landscape-only mode

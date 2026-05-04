@@ -44,6 +44,7 @@ The current playable loop works:
   - `LocalPlatformProvider` supplies local player and local ship/server identity
   - `SaveProvider` accepts an optional identity scope while localStorage behavior and save version remain unchanged
 - Desktop scaling uses a fixed 1280x720 Phaser coordinate space with `Scale.FIT`; page CSS now caps the displayed canvas at native size and fits it down for smaller desktop/iframe windows to avoid blurry oversized text.
+- `DISCORD_ACTIVITY_PLAN.md` documents the minimum Discord Activity proof-of-concept plan, including Developer Portal setup, URL mapping, GitHub Pages feasibility, SDK integration points, local fallback behavior, risks, and implementation order.
 
 ## Recent Changes
 

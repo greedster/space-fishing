@@ -33,9 +33,9 @@ npm run preview
 
 ## GitHub Pages
 
-The Vite production build uses `/space-fishing/` as its base path so the app works from GitHub Pages. Local dev still uses `/`.
+The Vite build uses a relative base path (`./`) so generated JS/CSS/assets resolve from the current document path. This works on the GitHub Pages project URL and is friendlier to Discord Activity URL mapping/proxy paths than absolute `/space-fishing/` asset URLs.
 
-Static assets in `public/` should be referenced through Vite's base URL, for example `import.meta.env.BASE_URL`, so they resolve both locally and under `/space-fishing/`.
+Static assets in `public/` should be referenced through Vite's base URL, for example `import.meta.env.BASE_URL`, so they resolve both locally, under `/space-fishing/`, and inside Discord Activity path mappings.
 
 Deployment is handled by `.github/workflows/deploy-pages.yml`. It runs on pushes to `main`, installs dependencies with `npm ci`, builds the Vite app, uploads `dist`, and deploys it through GitHub Pages Actions.
 
